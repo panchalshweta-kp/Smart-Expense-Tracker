@@ -1,0 +1,42 @@
+[
+    {
+        "id": 1,
+        "description": "Lunch",
+        "amount": 250.0,
+        "category": "Food",
+        "date": "2026-03-25",
+        "month": "March 2026"
+    },
+    {
+        "id": 2,
+        "description": "Bus Fare",
+        "amount": 350.0,
+        "category": "Transport",
+        "date": "2026-03-25",
+        "month": "March 2026"
+    },
+    {
+        "id": 3,
+        "description": "Math book",
+        "amount": 400.0,
+        "category": "Education",
+        "date": "2026-03-25",
+        "month": "March 2026"
+    },
+    {
+        "id": 4,
+        "description": "Movie ticket",
+        "amount": 600.0,
+        "category": "Entertainment",
+        "date": "2026-03-25",
+        "month": "March 2026"
+    },
+    {
+        "id": 5,
+        "description": "Lunch",
+        "amount": 52.0,
+        "category": "Food",
+        "date": "2026-05-18",
+        "month": "May 2026"
+    }
+]

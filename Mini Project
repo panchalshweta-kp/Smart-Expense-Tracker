@@ -1,0 +1,254 @@
+"""
+╔══════════════════════════════════════════╗
+║      SMART EXPENSE TRACKER  💰           ║
+║  Concepts: File Handling, Dicts, Loops   ║
+╚══════════════════════════════════════════╝
+"""
+
+import json          # for file handling (save/load expenses)
+import os            # to check if file exists
+from datetime import datetime   # to get current date
+
+# ── FILE WHERE DATA IS SAVED ──────────────────────────────────────
+DATA_FILE = "expenses.json"
+
+# ── AVAILABLE CATEGORIES ──────────────────────────────────────────
+CATEGORIES = ["Food", "Transport", "Shopping", "Health", "Education", "Entertainment", "Other"]
+
+
+# ══════════════════════════════════════════════════════════════════
+#  FILE HANDLING FUNCTIONS
+# ══════════════════════════════════════════════════════════════════
+
+def load_expenses():
+    """Load expenses from JSON file. Returns a list of expense dicts."""
+    if os.path.exists(DATA_FILE):           # check if file exists
+        with open(DATA_FILE, "r") as f:     # open file in read mode
+            return json.load(f)             # parse JSON → Python list
+    return []                               # return empty list if no file
+
+
+def save_expenses(expenses):
+    """Save the expenses list to JSON file."""
+    with open(DATA_FILE, "w") as f:         # open file in write mode
+        json.dump(expenses, f, indent=4)    # write Python list → JSON
+
+
+# ══════════════════════════════════════════════════════════════════
+#  CORE FEATURES
+# ══════════════════════════════════════════════════════════════════
+
+def add_expense(expenses):
+    """Add a new expense entry."""
+    print("\n── ADD EXPENSE ──────────────────────")
+
+    # Get description
+    desc = input("Description (e.g. Lunch, Bus fare): ").strip()
+    if not desc:
+        print("❌ Description cannot be empty.")
+        return
+
+    # Get amount
+    try:
+        amount = float(input("Amount (₹): "))
+        if amount <= 0:
+            print("❌ Amount must be positive.")
+            return
+    except ValueError:
+        print("❌ Invalid amount. Enter a number.")
+        return
+
+    # Show categories and let user pick
+    print("\nCategories:")
+    for i, cat in enumerate(CATEGORIES, 1):     # loop through categories
+        print(f"  {i}. {cat}")
+
+    try:
+        choice = int(input("Choose category (1-7): "))
+        if choice < 1 or choice > len(CATEGORIES):
+            print("❌ Invalid choice.")
+            return
+        category = CATEGORIES[choice - 1]
+    except ValueError:
+        print("❌ Enter a valid number.")
+        return
+
+    # Build expense as a dictionary
+    expense = {
+        "id": len(expenses) + 1,                        # unique ID
+        "description": desc,
+        "amount": amount,
+        "category": category,
+        "date": datetime.now().strftime("%Y-%m-%d"),     # today's date
+        "month": datetime.now().strftime("%B %Y")        # e.g. "March 2026"
+    }
+
+    expenses.append(expense)    # add to list
+    save_expenses(expenses)     # save to file
+
+    print(f"\n✅ Expense added! ₹{amount:.2f} for '{desc}' under {category}.")
+
+
+def view_expenses(expenses):
+    """Display all expenses in a formatted table."""
+    print("\n── ALL EXPENSES ─────────────────────")
+
+    if not expenses:            # conditional: check if list is empty
+        print("No expenses recorded yet.")
+        return
+
+    # Print table header
+    print(f"{'ID':<5} {'Date':<12} {'Description':<20} {'Category':<15} {'Amount':>10}")
+    print("─" * 65)
+
+    total = 0
+    for exp in expenses:        # loop through all expenses
+        print(f"{exp['id']:<5} {exp['date']:<12} {exp['description']:<20} {exp['category']:<15} ₹{exp['amount']:>8.2f}")
+        total += exp['amount']  # accumulate total
+
+    print("─" * 65)
+    print(f"{'TOTAL':>53} ₹{total:>8.2f}")
+    print(f"\nTotal Expenses: {len(expenses)} entries")
+
+
+def delete_expense(expenses):
+    """Delete an expense by its ID."""
+    print("\n── DELETE EXPENSE ───────────────────")
+
+    if not expenses:
+        print("No expenses to delete.")
+        return
+
+    view_expenses(expenses)
+
+    try:
+        del_id = int(input("\nEnter ID to delete: "))
+    except ValueError:
+        print("❌ Invalid ID.")
+        return
+
+    # Loop to find the expense with matching ID
+    found = None
+    for exp in expenses:
+        if exp["id"] == del_id:
+            found = exp
+            break
+
+    if found:
+        confirm = input(f"Delete '{found['description']}' (₹{found['amount']})? (y/n): ")
+        if confirm.lower() == 'y':
+            expenses.remove(found)
+            save_expenses(expenses)
+            print("✅ Expense deleted.")
+        else:
+            print("Cancelled.")
+    else:
+        print("❌ No expense found with that ID.")
+
+
+def category_summary(expenses):
+    """Show total spending grouped by category (uses a dictionary)."""
+    print("\n── CATEGORY-WISE SUMMARY ────────────")
+
+    if not expenses:
+        print("No expenses recorded yet.")
+        return
+
+    # Use a dictionary to group totals by category
+    cat_totals = {}                         # empty dict
+    for exp in expenses:                    # loop through all expenses
+        cat = exp["category"]
+        if cat in cat_totals:               # if category already in dict
+            cat_totals[cat] += exp["amount"]
+        else:
+            cat_totals[cat] = exp["amount"] # first entry for this category
+
+    # Calculate grand total for percentage
+    grand_total = sum(cat_totals.values())
+
+    print(f"\n{'Category':<18} {'Total':>10}   {'Share':>7}")
+    print("─" * 42)
+
+    # Sort by amount (highest first) and loop through
+    for cat, total in sorted(cat_totals.items(), key=lambda x: x[1], reverse=True):
+        pct = (total / grand_total) * 100
+        bar = "█" * int(pct / 5)            # simple text bar chart
+        print(f"{cat:<18} ₹{total:>8.2f}   {pct:>5.1f}%  {bar}")
+
+    print("─" * 42)
+    print(f"{'GRAND TOTAL':<18} ₹{grand_total:>8.2f}")
+
+
+def monthly_summary(expenses):
+    """Show spending summary grouped by month."""
+    print("\n── MONTHLY SUMMARY ──────────────────")
+
+    if not expenses:
+        print("No expenses recorded yet.")
+        return
+
+    # Dictionary: month → total amount
+    monthly = {}
+    for exp in expenses:                    # loop
+        month = exp["month"]
+        if month in monthly:
+            monthly[month] += exp["amount"]
+        else:
+            monthly[month] = exp["amount"]
+
+    print(f"\n{'Month':<18} {'Total Spent':>12}")
+    print("─" * 32)
+
+    for month, total in monthly.items():    # loop through dictionary
+        print(f"{month:<18} ₹{total:>10.2f}")
+
+    print("─" * 32)
+    print(f"{'OVERALL TOTAL':<18} ₹{sum(monthly.values()):>10.2f}")
+
+
+# ══════════════════════════════════════════════════════════════════
+#  MAIN MENU (Entry Point)
+# ══════════════════════════════════════════════════════════════════
+
+def main():
+    print("╔══════════════════════════════════════╗")
+    print("║      SMART EXPENSE TRACKER  💰       ║")
+    print("╚══════════════════════════════════════╝")
+
+    expenses = load_expenses()      # load from file on startup
+    print(f"📂 Loaded {len(expenses)} expense(s) from file.\n")
+
+    # Main loop — keeps running until user exits
+    while True:
+        print("\n┌─ MENU ────────────────────────────┐")
+        print("│  1. Add Expense                    │")
+        print("│  2. View All Expenses              │")
+        print("│  3. Delete Expense                 │")
+        print("│  4. Category-wise Summary          │")
+        print("│  5. Monthly Summary                │")
+        print("│  6. Exit                           │")
+        print("└────────────────────────────────────┘")
+
+        choice = input("Your choice (1-6): ").strip()
+
+        # Conditionals to call the right function
+        if choice == "1":
+            add_expense(expenses)
+        elif choice == "2":
+            view_expenses(expenses)
+        elif choice == "3":
+            delete_expense(expenses)
+        elif choice == "4":
+            category_summary(expenses)
+        elif choice == "5":
+            monthly_summary(expenses)
+        elif choice == "6":
+            print("\n👋 Goodbye! Your expenses are saved.\n")
+            break                       # exit the loop
+        else:
+            print("❌ Invalid choice. Enter 1-6.")
+
+
+# ── Run the program ───────────────────────────────────────────────
+if __name__ == "__main__":
+    main()
